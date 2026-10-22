@@ -425,11 +425,76 @@ h1, h2, h3, h4, h5, h6 {
 @media (max-width: 1024px) {
   .grid-4 { grid-template-columns: repeat(2, 1fr); }
   .grid-3 { grid-template-columns: 1fr; }
-  .page-container { padding: 18px; }
+  .page-container { padding: 18px 16px; }
+
+  /* Mobile Sidebar Drawer */
+  .app-sidebar {
+    position: fixed !important;
+    top: 0;
+    left: -290px;
+    bottom: 0;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: none;
+    z-index: 1001 !important;
+  }
+
+  .app-sidebar.mobile-open {
+    left: 0 !important;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.85);
+  }
+
+  .mobile-hamburger-btn {
+    display: inline-flex !important;
+  }
+
+  .mobile-close-btn {
+    display: inline-flex !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .navbar-header {
+    padding: 10px 14px !important;
+  }
+
+  .nav-btn-hide-mobile {
+    display: none !important;
+  }
+
+  .navbar-actions {
+    gap: 8px !important;
+  }
+
+  .modal-content {
+    max-width: 95vw !important;
+    border-radius: var(--radius-lg);
+  }
+
+  .modal-header {
+    padding: 16px 18px;
+  }
+
+  .modal-body {
+    padding: 18px;
+  }
+
+  .modal-footer {
+    padding: 14px 18px;
+  }
 }
 
 @media (max-width: 640px) {
   .grid-2 { grid-template-columns: 1fr; }
   .grid-4 { grid-template-columns: 1fr; }
-  .page-container { padding: 14px; }
+  .page-container { padding: 14px 12px; }
+
+  .btn {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+  }
+
+  .form-select, .form-input {
+    font-size: 0.82rem;
+  }
 }
+

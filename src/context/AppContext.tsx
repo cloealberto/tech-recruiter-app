@@ -81,6 +81,9 @@ interface AppContextType {
   isPortfolioCaseModalOpen: boolean;
   setIsPortfolioCaseModalOpen: (open: boolean) => void;
 
+  isMobileMenuOpen: boolean;
+  setIsMobileMenuOpen: (open: boolean) => void;
+
   resetDemoData: () => void;
 }
 
@@ -104,6 +107,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isScorecardModalOpen, setIsScorecardModalOpen] = useState(false);
   const [candidateForScorecard, setCandidateForScorecard] = useState<Candidate | null>(null);
   const [isPortfolioCaseModalOpen, setIsPortfolioCaseModalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Entities state with LocalStorage caching
   const [jobs, setJobs] = useState<Job[]>(() => {
@@ -361,6 +365,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCandidateForScorecard,
         isPortfolioCaseModalOpen,
         setIsPortfolioCaseModalOpen,
+        isMobileMenuOpen,
+        setIsMobileMenuOpen,
         resetDemoData
       }}
     >

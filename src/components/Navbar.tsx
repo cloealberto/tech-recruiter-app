@@ -1,13 +1,11 @@
 import React from 'react';
 import { 
-  Briefcase, 
-  UserCheck, 
   RotateCcw, 
   Sparkles, 
   Plus, 
-  Users, 
   ShieldCheck, 
-  ChevronDown 
+  Menu,
+  Briefcase
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import type { UserRole } from '../types';
@@ -17,79 +15,45 @@ export const Navbar: React.FC = () => {
     currentUser, 
     switchUserRole, 
     setIsNewCandidateModalOpen, 
-    setIsNewJobModalOpen, 
     setIsPortfolioCaseModalOpen,
     resetDemoData,
     jobs,
     selectedJobId,
-    setSelectedJobId
+    setSelectedJobId,
+    setIsMobileMenuOpen
   } = useApp();
 
   const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     switchUserRole(e.target.value as UserRole);
   };
 
-  const currentJob = jobs.find(j => j.id === selectedJobId) || jobs[0];
-
   return (
     <header className="navbar-header" style={{
       background: 'rgba(13, 16, 28, 0.85)',
       backdropFilter: 'blur(16px)',
       borderBottom: '1px solid var(--border)',
-      padding: '12px 28px',
+      padding: '12px 24px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       position: 'sticky',
       top: 0,
-      zIndex: 100
+      zIndex: 100,
+      gap: '12px'
     }}>
-      {/* Brand & Context */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, #7C3AED 0%, #06B6D4 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 0 16px rgba(124, 58, 237, 0.4)'
-          }}>
-            <Briefcase size={20} color="#FFFFFF" />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ 
-                fontFamily: 'var(--font-display)', 
-                fontWeight: 800, 
-                fontSize: '1.2rem', 
-                letterSpacing: '-0.02em',
-                background: 'linear-gradient(to right, #FFFFFF, #CBD5E1)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent'
-              }}>
-                TechRecruit
-              </span>
-              <span style={{
-                background: 'linear-gradient(135deg, #7C3AED, #06B6D4)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                fontWeight: 800,
-                fontSize: '1.2rem'
-              }}>
-                Hub
-              </span>
-              <span className="badge badge-purple" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>PRO</span>
-            </div>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              ATS & Pipeline para Tech Recruiters
-            </p>
-          </div>
-        </div>
+      {/* Left side: Mobile Menu Toggle & Global Job Selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
+        {/* Mobile Hamburger Button */}
+        <button 
+          onClick={() => setIsMobileMenuOpen(true)}
+          className="mobile-hamburger-btn btn btn-secondary btn-sm"
+          style={{ display: 'none', padding: '7px 9px' }}
+          title="Abrir menu lateral"
+        >
+          <Menu size={18} />
+        </button>
 
-        {/* Global Job Selector shortcut */}
+        {/* Global Job Selector */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -97,10 +61,11 @@ export const Navbar: React.FC = () => {
           background: 'rgba(255, 255, 255, 0.04)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-md)',
-          padding: '4px 12px',
-          marginLeft: '12px'
+          padding: '6px 14px'
         }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Vaga Ativa:</span>
+          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', whiteSpace: 'nowrap' }}>
+            Vaga Ativa:
+          </span>
           <select 
             value={selectedJobId} 
             onChange={(e) => setSelectedJobId(e.target.value)}
@@ -108,13 +73,16 @@ export const Navbar: React.FC = () => {
               background: 'transparent',
               border: 'none',
               color: 'var(--text-primary)',
-              fontSize: '0.8rem',
+              fontSize: '0.84rem',
               fontWeight: 600,
               cursor: 'pointer',
               outline: 'none',
-              maxWidth: '240px'
+              maxWidth: '300px'
             }}
           >
+            <option value="all" style={{ background: '#0D101C', color: '#F8FAFC' }}>
+              Todas as Vagas (Visão Geral)
+            </option>
             {jobs.map(job => (
               <option key={job.id} value={job.id} style={{ background: '#0D101C', color: '#F8FAFC' }}>
                 {job.title}
@@ -124,12 +92,18 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Actions and Profile Switcher */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+      {/* Right side: Actions, Novo Candidato & Profile Switcher */}
+      <div className="navbar-actions" style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '10px', 
+        flexWrap: 'wrap',
+        justifyContent: 'flex-end'
+      }}>
         {/* Portfolio Case Study Button */}
         <button 
           onClick={() => setIsPortfolioCaseModalOpen(true)}
-          className="btn btn-secondary btn-sm"
+          className="btn btn-secondary btn-sm nav-btn-hide-mobile"
           style={{
             borderColor: 'rgba(124, 58, 237, 0.4)',
             background: 'rgba(124, 58, 237, 0.08)',
@@ -148,7 +122,7 @@ export const Navbar: React.FC = () => {
               resetDemoData();
             }
           }}
-          className="btn btn-ghost btn-sm"
+          className="btn btn-ghost btn-sm nav-btn-hide-mobile"
           title="Restaurar dados demo originais"
           style={{ fontSize: '0.78rem' }}
         >
@@ -156,12 +130,13 @@ export const Navbar: React.FC = () => {
           <span>Reset Demo</span>
         </button>
 
-        {/* Create Buttons */}
+        {/* Novo Candidato Button - Now fully visible with zero cut-off */}
         <button 
           onClick={() => setIsNewCandidateModalOpen(true)}
           className="btn btn-primary btn-sm"
+          style={{ fontWeight: 700 }}
         >
-          <Plus size={15} />
+          <Plus size={16} />
           <span>Novo Candidato</span>
         </button>
 
@@ -169,11 +144,11 @@ export const Navbar: React.FC = () => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
+          gap: '8px',
           background: 'rgba(255, 255, 255, 0.04)',
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-md)',
-          padding: '6px 12px'
+          padding: '4px 10px'
         }}>
           <img 
             src={currentUser.avatar} 
@@ -187,10 +162,10 @@ export const Navbar: React.FC = () => {
             }} 
           />
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-primary)' }}>
-              {currentUser.name}
+            <span style={{ fontSize: '0.76rem', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap' }}>
+              {currentUser.name.split(' ')[0]}
             </span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
               <ShieldCheck size={11} color="#A78BFA" />
               <select 
                 value={currentUser.role} 
@@ -199,16 +174,16 @@ export const Navbar: React.FC = () => {
                   background: 'transparent',
                   border: 'none',
                   color: '#A78BFA',
-                  fontSize: '0.72rem',
+                  fontSize: '0.7rem',
                   fontWeight: 600,
                   cursor: 'pointer',
                   outline: 'none',
                   padding: 0
                 }}
               >
-                <option value="recruiter" style={{ background: '#0D101C', color: '#F8FAFC' }}>Perfil: Recruiter</option>
-                <option value="gestor" style={{ background: '#0D101C', color: '#F8FAFC' }}>Perfil: Gestor / EM</option>
-                <option value="admin" style={{ background: '#0D101C', color: '#F8FAFC' }}>Perfil: Admin / Head</option>
+                <option value="recruiter" style={{ background: '#0D101C', color: '#F8FAFC' }}>Recruiter</option>
+                <option value="gestor" style={{ background: '#0D101C', color: '#F8FAFC' }}>Gestor / EM</option>
+                <option value="admin" style={{ background: '#0D101C', color: '#F8FAFC' }}>Admin</option>
               </select>
             </div>
           </div>
