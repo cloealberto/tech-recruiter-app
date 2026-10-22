@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   Users, 
   Plus, 
@@ -15,7 +15,8 @@ import {
   ChevronRight, 
   ChevronLeft,
   ArrowRight,
-  GripVertical
+  GripVertical,
+  Check
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { PIPELINE_STAGES } from '../data/mockData';
@@ -41,8 +42,25 @@ export const KanbanView: React.FC = () => {
   const [rejectModalApp, setRejectModalApp] = useState<{ id: string; name: string } | null>(null);
   const [rejectionReason, setRejectionReason] = useState('Reprovado no Desafio Técnico');
   const [searchQuery, setSearchQuery] = useState('');
+  
+  // Toast feedback state
+  const [toast, setToast] = useState<{ message: string; stageId: PipelineStage } | null>(null);
+
+  const boardContainerRef = useRef<HTMLDivElement>(null);
 
   const currentJob = jobs.find(j => j.id === selectedJobId) || jobs[0];
+
+  const stageOrder: PipelineStage[] = [
+    'sourced', 
+    'contacted', 
+    'screening', 
+    'fit', 
+    'challenge', 
+    'technical', 
+    'proposal', 
+    'hired', 
+    'rejected'
+  ];
 
   // Applications for current job
   const jobApplications = applications.filter(a => {
@@ -58,6 +76,35 @@ export const KanbanView: React.FC = () => {
     }
     return true;
   });
+
+  const scrollToStage = (stageId: PipelineStage) => {
+    const colEl = document.getElementById(`kanban-col-${stageId}`);
+    if (colEl) {
+      colEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  };
+
+  const handleStepAdvance = (appId: string, targetStage: PipelineStage, candidateName: string) => {
+    moveCandidate(appId, targetStage);
+    
+    const stageDef = PIPELINE_STAGES.find(s => s.id === targetStage);
+    const stageName = stageDef ? stageDef.label : targetStage;
+
+    setToast({
+      message: `${candidateName} avançou para a coluna "${stageName}"!`,
+      stageId: targetStage
+    });
+
+    // Auto-scroll to destination stage
+    setTimeout(() => {
+      scrollToStage(targetStage);
+    }, 60);
+
+    // Auto dismiss toast after 4s
+    setTimeout(() => {
+      setToast(null);
+    }, 4500);
+  };
 
   const handleDragStart = (e: React.DragEvent, appId: string) => {
     setDraggedAppId(appId);
@@ -82,12 +129,19 @@ export const KanbanView: React.FC = () => {
     setDragOverStage(null);
     const appId = e.dataTransfer.getData('text/plain') || draggedAppId;
     if (appId) {
+      const app = applications.find(a => a.id === appId);
+      const cand = candidates.find(c => c.id === app?.candidateId);
+
       if (targetStage === 'rejected') {
-        const app = applications.find(a => a.id === appId);
-        const cand = candidates.find(c => c.id === app?.candidateId);
         setRejectModalApp({ id: appId, name: cand?.fullName || 'Candidato' });
       } else {
         moveCandidate(appId, targetStage);
+        const stageDef = PIPELINE_STAGES.find(s => s.id === targetStage);
+        setToast({
+          message: `${cand?.fullName || 'Candidato'} movido para "${stageDef?.label || targetStage}"!`,
+          stageId: targetStage
+        });
+        setTimeout(() => setToast(null), 4000);
       }
     }
     setDraggedAppId(null);
@@ -96,31 +150,25 @@ export const KanbanView: React.FC = () => {
   const confirmRejection = () => {
     if (rejectModalApp) {
       moveCandidate(rejectModalApp.id, 'rejected', rejectionReason);
+      setToast({
+        message: `${rejectModalApp.name} movido para a coluna "Reprovado" (${rejectionReason})`,
+        stageId: 'rejected'
+      });
+      setTimeout(() => scrollToStage('rejected'), 60);
+      setTimeout(() => setToast(null), 4000);
       setRejectModalApp(null);
     }
   };
 
-  const stageOrder: PipelineStage[] = [
-    'sourced', 
-    'contacted', 
-    'screening', 
-    'fit', 
-    'challenge', 
-    'technical', 
-    'proposal', 
-    'hired', 
-    'rejected'
-  ];
-
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Top Controls Bar */}
       <div style={{ 
         display: 'flex', 
         alignItems: 'center', 
         justifyContent: 'space-between', 
         flexWrap: 'wrap', 
-        gap: '16px' 
+        gap: '14px' 
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
           <div>
@@ -181,8 +229,48 @@ export const KanbanView: React.FC = () => {
         </div>
       </div>
 
+      {/* Quick Stage Jump Navigation Pills */}
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '8px',
+        overflowX: 'auto',
+        padding: '6px 4px 10px',
+        borderBottom: '1px solid var(--border-subtle)'
+      }}>
+        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', fontWeight: 600 }}>
+          Navegar até coluna:
+        </span>
+        {PIPELINE_STAGES.map(s => {
+          const count = jobApplications.filter(a => a.status === s.id).length;
+          return (
+            <button
+              key={s.id}
+              onClick={() => scrollToStage(s.id)}
+              className="btn btn-secondary btn-sm"
+              style={{
+                fontSize: '0.74rem',
+                padding: '4px 10px',
+                whiteSpace: 'nowrap',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}
+              title={`Ver coluna ${s.label}`}
+            >
+              <span style={{ width: '7px', height: '7px', borderRadius: '50%', backgroundColor: s.color }} />
+              <span>{s.label}</span>
+              <span className="badge badge-muted" style={{ padding: '1px 5px', fontSize: '0.66rem' }}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Kanban Board Horizontal Scroll Container */}
       <div 
+        ref={boardContainerRef}
         className="kanban-board-container"
         style={{
           display: 'flex',
@@ -190,7 +278,8 @@ export const KanbanView: React.FC = () => {
           overflowX: 'auto',
           paddingBottom: '20px',
           minHeight: '680px',
-          alignItems: 'stretch'
+          alignItems: 'stretch',
+          scrollBehavior: 'smooth'
         }}
       >
         {PIPELINE_STAGES.map((stage) => {
@@ -201,6 +290,7 @@ export const KanbanView: React.FC = () => {
           return (
             <div
               key={stage.id}
+              id={`kanban-col-${stage.id}`}
               onDragOver={(e) => handleDragOver(e, stage.id)}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, stage.id)}
@@ -283,7 +373,6 @@ export const KanbanView: React.FC = () => {
                   stageApps.map((app) => {
                     const candidate = candidates.find(c => c.id === app.candidateId);
                     if (!candidate) return null;
-                    const job = jobs.find(j => j.id === app.jobId);
                     const candidateScorecards = scorecards.filter(s => s.candidateId === candidate.id);
 
                     return (
@@ -418,7 +507,24 @@ export const KanbanView: React.FC = () => {
                           )}
                         </div>
 
-                        {/* Rejection comment if rejected */}
+                        {/* Status specific notices */}
+                        {stage.id === 'hired' && (
+                          <div style={{
+                            padding: '6px 8px',
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            borderRadius: '4px',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            fontSize: '0.72rem',
+                            color: '#6EE7B7',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px'
+                          }}>
+                            <span>🎉</span>
+                            <strong>Contratação Confirmada!</strong>
+                          </div>
+                        )}
+
                         {stage.id === 'rejected' && app.rejectionReason && (
                           <div style={{
                             padding: '6px 8px',
@@ -444,7 +550,7 @@ export const KanbanView: React.FC = () => {
                         }}>
                           {stageIndex > 0 ? (
                             <button
-                              onClick={() => moveCandidate(app.id, stageOrder[stageIndex - 1])}
+                              onClick={() => handleStepAdvance(app.id, stageOrder[stageIndex - 1], candidate.fullName)}
                               className="btn btn-ghost btn-sm"
                               style={{ padding: '3px 6px', fontSize: '0.7rem' }}
                               title={`Voltar para ${stageOrder[stageIndex - 1]}`}
@@ -463,7 +569,7 @@ export const KanbanView: React.FC = () => {
 
                           {stageIndex < stageOrder.length - 2 ? (
                             <button
-                              onClick={() => moveCandidate(app.id, stageOrder[stageIndex + 1])}
+                              onClick={() => handleStepAdvance(app.id, stageOrder[stageIndex + 1], candidate.fullName)}
                               className="btn btn-primary btn-sm"
                               style={{ padding: '3px 8px', fontSize: '0.7rem' }}
                               title={`Avançar para ${stageOrder[stageIndex + 1]}`}
@@ -472,13 +578,25 @@ export const KanbanView: React.FC = () => {
                             </button>
                           ) : stage.id === 'proposal' ? (
                             <button
-                              onClick={() => moveCandidate(app.id, 'hired')}
+                              onClick={() => handleStepAdvance(app.id, 'hired', candidate.fullName)}
                               className="btn btn-success btn-sm"
                               style={{ padding: '3px 8px', fontSize: '0.7rem' }}
                             >
                               Contratar 🎉
                             </button>
-                          ) : <div />}
+                          ) : stage.id === 'rejected' ? (
+                            <button
+                              onClick={() => handleStepAdvance(app.id, 'screening', candidate.fullName)}
+                              className="btn btn-secondary btn-sm"
+                              style={{ padding: '3px 8px', fontSize: '0.7rem' }}
+                            >
+                              Reabrir
+                            </button>
+                          ) : (
+                            <span style={{ fontSize: '0.7rem', color: '#10B981', paddingRight: '4px' }}>
+                              Finalizado ✓
+                            </span>
+                          )}
                         </div>
                       </div>
                     );
@@ -489,6 +607,45 @@ export const KanbanView: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Floating Interactive Toast Feedback */}
+      {toast && (
+        <div style={{
+          position: 'fixed',
+          bottom: '24px',
+          right: '24px',
+          background: 'rgba(15, 20, 36, 0.96)',
+          border: '1px solid rgba(124, 58, 237, 0.5)',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.7), 0 0 20px rgba(124, 58, 237, 0.3)',
+          backdropFilter: 'blur(12px)',
+          borderRadius: '12px',
+          padding: '12px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          zIndex: 1000,
+          animation: 'scaleIn 0.25s ease'
+        }}>
+          <CheckCircle2 size={18} color="#10B981" />
+          <span style={{ fontSize: '0.84rem', color: '#FFFFFF', fontWeight: 600 }}>
+            {toast.message}
+          </span>
+          <button
+            onClick={() => scrollToStage(toast.stageId)}
+            className="btn btn-primary btn-sm"
+            style={{ padding: '4px 8px', fontSize: '0.72rem' }}
+          >
+            Ver Coluna &rarr;
+          </button>
+          <button 
+            onClick={() => setToast(null)} 
+            className="btn btn-ghost btn-sm" 
+            style={{ padding: '2px 4px', fontSize: '0.8rem', color: 'var(--text-muted)' }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Rejection Reason Modal */}
       {rejectModalApp && (
